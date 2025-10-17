@@ -1,0 +1,12 @@
+spring:
+  ai:
+    openai:
+      api-key: "######"
+      chat:
+        options:
+          model: "gpt-4o-mini"
+
+logging:
+  level:
+    org.springframework.ai.chat.client.advisor: debug
+    com.datamining.ssedemo: debug
