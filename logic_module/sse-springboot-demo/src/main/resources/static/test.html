@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat 流式输出测试 (POST + JSON)</title>
+</head>
+<body>
+<h2>Chat 流式输出测试 (POST + JSON)</h2>
+
+<label>Prompt：</label>
+<input id="prompt" type="text" size="50" value="你好，介绍一下你自己">
+<br><br>
+
+<label>Chat ID：</label>
+<input id="chatId" type="text" value="test-1">
+<br><br>
+
+<button onclick="startChat()">开始聊天</button>
+<button onclick="stopChat()">停止</button>
+
+<hr>
+<pre id="output" style="white-space: pre-wrap; background: #f4f4f4; padding: 10px; border-radius: 5px;"></pre>
+
+<script>
+    let abortController = null;
+
+    async function startChat() {
+        const prompt = document.getElementById("prompt").value;
+        const chatId = document.getElementById("chatId").value;
+        const output = document.getElementById("output");
+        output.textContent = "正在连接服务器...\n";
+
+        // 如果上一次连接还没结束，先中断
+        if (abortController) {
+            abortController.abort();
+        }
+        abortController = new AbortController();
+
+        try {
+            const response = await fetch("http://localhost:8080/ai/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "text/event-stream"   // 告诉服务器我们要流式响应
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    chatId: chatId
+                }),
+                signal: abortController.signal
+            });
+
+            if (!response.ok) {
+                output.textContent += `请求失败: ${response.status}\n`;
+                return;
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            // 持续读取服务器推送的内容
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    output.textContent += "\n[连接已结束]\n";
+                    break;
+                }
+                const chunk = decoder.decode(value, { stream: true });
+                output.textContent += chunk;
+            }
+
+        } catch (err) {
+            if (err.name === "AbortError") {
+                output.textContent += "\n[手动终止连接]\n";
+            } else {
+                output.textContent += `\n发生错误: ${err.message}\n`;
+            }
+        }
+    }
+
+    function stopChat() {
+        if (abortController) {
+            abortController.abort();
+            abortController = null;
+        }
+    }
+</script>
+</body>
+</html>
