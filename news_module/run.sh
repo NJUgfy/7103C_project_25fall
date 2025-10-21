@@ -1,0 +1,1 @@
+nohup gunicorn -w 4 --bind 127.0.0.1:9106 --access-logfile - --error-logfile - --capture-output --log-level info --pid /tmp/gunicorn_9106.pid "run:create_app()" > gunicorn.log 2>&1 &
