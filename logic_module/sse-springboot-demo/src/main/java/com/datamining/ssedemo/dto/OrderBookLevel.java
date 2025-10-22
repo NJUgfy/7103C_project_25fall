@@ -4,13 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 盘口档位信息。
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class NewsItem {
-    private String title;
-    private String source;
-    private String url;
-    private String summary;
-    private String publishedAt;
+public class OrderBookLevel {
+    private double price;
+    private double volume;
 }

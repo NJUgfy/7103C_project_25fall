@@ -4,13 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
+/**
+ * 盘口深度信息。
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class NewsItem {
-    private String title;
-    private String source;
-    private String url;
-    private String summary;
-    private String publishedAt;
+public class OrderBook {
+    private List<OrderBookLevel> bids;
+    private List<OrderBookLevel> asks;
 }

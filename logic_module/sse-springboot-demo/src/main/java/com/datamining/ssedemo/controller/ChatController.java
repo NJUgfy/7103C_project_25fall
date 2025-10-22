@@ -2,6 +2,7 @@ package com.datamining.ssedemo.controller;
 
 import com.datamining.ssedemo.dto.ChatReq;
 import com.datamining.ssedemo.repository.ChatHistoryRepository;
+import com.datamining.ssedemo.service.ChatWorkflowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.http.MediaType;
@@ -19,6 +20,7 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 public class ChatController {
     private final ChatClient chatClient;
     private final ChatHistoryRepository chatHistoryRepository;
+    private final ChatWorkflowService chatWorkflowService;
 
     /**
      * 接收消息
@@ -33,11 +35,18 @@ public class ChatController {
     public Flux<String> chat(@RequestBody ChatReq req) {
         // 保存id
         chatHistoryRepository.save(req.getChatId());
-        Flux<String> content = chatClient.prompt()
-                .user(req.getContent())
-                .advisors(a -> a.param(CONVERSATION_ID,req.getChatId()))
-                .stream()
-                .content();
-        return content;
+        String userText = req.getContent();
+        if (userText == null || userText.isBlank()) {
+            userText = req.getMessage();
+        }
+        // Flux<String> content = chatClient.prompt()
+        //         .user(userText)
+        //         .advisors(a -> a.param(CONVERSATION_ID, req.getChatId()))
+        //         .stream()
+        //         .content();
+        // return content;
+
+        // 改为复用工作流，输出 extract/news/market/final 统一事件流
+        return chatWorkflowService.process(req);
     }
 }

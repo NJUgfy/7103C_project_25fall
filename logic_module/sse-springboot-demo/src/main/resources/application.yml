@@ -1,11 +1,19 @@
+# spring:
+#   ai:
+#     openai:
+#       api-key:
+#       chat:
+#         options:
+#           model: "gpt-4o-mini"
 spring:
-  ai:
-    openai:
-      api-key: "######"
-      chat:
-        options:
-          model: "gpt-4o-mini"
-
+       ai:
+         openai:
+           api-key: 
+           base-url: https://dashscope.aliyuncs.com/compatible-mode
+           chat:
+             options:
+               model: qwen3-max
+               timeout: PT30S
 logging:
   level:
     org.springframework.ai.chat.client.advisor: debug
