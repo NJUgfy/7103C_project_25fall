@@ -37,13 +37,14 @@ import java.util.stream.Collectors;
 public class OpenAiLLMService implements LLMService {
 
     private static final String EXTRACT_SYSTEM_PROMPT = "You are an assistant that identifies financial intents, instruments and news categories. "
-            + "Always answer with strict JSON only.";
+            // + "Always answer with strict JSON only."
+            ;
 
     private static final String EXTRACT_USER_TEMPLATE = """
             请从以下用户输入中抽取财经资讯类别与涉及的金融产品，并说明推理：
             输出格式固定为 JSON，包含字段：
             - newsCategories: 字符串数组（英文小写主题，例如 finance、policy）
-            - products: 字符串数组（使用常见交易代码，例如 BTC_USDT、AAPL）
+            - products: 字符串数组（使用常见交易代码，例如 BTC-USDT、AAPL）
             - reasoning: 字符串，描述你的推理过程
 
             用户输入：
@@ -66,7 +67,7 @@ public class OpenAiLLMService implements LLMService {
             行情数据:
             %s
 
-            请结合以上信息，输出结构化投资建议，至少包含：
+            请结合以上信息，输出自然语言的结构化投资建议，至少包含：
             1. 市场判断
             2. 建议操作或关注点
             3. 风险提示

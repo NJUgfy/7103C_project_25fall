@@ -23,6 +23,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
+import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -48,6 +49,8 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
     private final RestTemplate newsRestTemplate;
     private final RestTemplate marketRestTemplate;
     private final ObjectMapper objectMapper;
+    private final String newsBaseUrl;
+    private final String marketBaseUrl;
     private volatile boolean newsServiceEnabled = true;
     private volatile boolean marketServiceEnabled = true;
 
@@ -72,6 +75,8 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
                 .build();
         this.newsServiceEnabled = newsEnabled;
         this.marketServiceEnabled = marketEnabled;
+        this.newsBaseUrl = newsBaseUrl;
+        this.marketBaseUrl = marketBaseUrl;
     }
 
     @Override
@@ -84,16 +89,20 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
         Instant from = now.minus(window);
         String keyword = buildKeyword(extract);
 
-        UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/search")
+        URI uri = UriComponentsBuilder.fromHttpUrl(newsBaseUrl)
+                .path("/search")
                 .queryParam("keyword", keyword)
                 .queryParam("from", DATE_FORMATTER.format(from.atZone(ZoneOffset.UTC)))
                 .queryParam("to", DATE_FORMATTER.format(now.atZone(ZoneOffset.UTC)))
-                .queryParam("limit", 10)
+                .queryParam("limit", 5)
                 .queryParam("sources", "")
-                .queryParam("region", "en");
+                .queryParam("region", "en")
+                .build()
+                .encode()
+                .toUri();
 
         try {
-            ResponseEntity<String> response = newsRestTemplate.getForEntity(uri.toUriString(), String.class);
+            ResponseEntity<String> response = newsRestTemplate.getForEntity(uri, String.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 log.warn("新闻服务返回异常状态: {}", response.getStatusCode());
                 return Collections.emptyList();
@@ -162,11 +171,15 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
     }
 
     private Optional<TickerPayload> fetchTicker(String product) {
-        UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/get_ticker")
+        URI uri = UriComponentsBuilder.fromHttpUrl(marketBaseUrl)
+                .path("/get_ticker")
                 .queryParam("platform", "OKX")
-                .queryParam("symbol", product);
+                .queryParam("symbol", product)
+                .build()
+                .encode()
+                .toUri();
         try {
-            ResponseEntity<String> response = marketRestTemplate.getForEntity(uri.toUriString(), String.class);
+            ResponseEntity<String> response = marketRestTemplate.getForEntity(uri, String.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 log.warn("行情 ticker 接口状态异常: {}", response.getStatusCode());
                 marketServiceEnabled = false;
@@ -187,16 +200,20 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
     }
 
     private KlineResult fetchKlines(String product, Instant from, Instant to) {
-        UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/get_klines")
+        URI uri = UriComponentsBuilder.fromHttpUrl(marketBaseUrl)
+                .path("/get_klines")
                 .queryParam("platform", "OKX")
                 .queryParam("symbol", product)
                 .queryParam("market_type", "SPOT")
-                .queryParam("interval", "1h")
+                .queryParam("interval", "1H")
                 .queryParam("start_time", from.getEpochSecond())
                 .queryParam("end_time", to.getEpochSecond())
-                .queryParam("limit", 120);
+                .queryParam("limit", 120)
+                .build()
+                .encode()
+                .toUri();
         try {
-            ResponseEntity<String> response = marketRestTemplate.getForEntity(uri.toUriString(), String.class);
+            ResponseEntity<String> response = marketRestTemplate.getForEntity(uri, String.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 log.warn("行情 kline 接口状态异常: {}", response.getStatusCode());
                 marketServiceEnabled = false;
@@ -229,11 +246,15 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
     }
 
     private Optional<DepthPayload> fetchDepth(String product) {
-        UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/get_depth")
+        URI uri = UriComponentsBuilder.fromHttpUrl(marketBaseUrl)
+                .path("/get_depth")
                 .queryParam("platform", "OKX")
-                .queryParam("symbol", product);
+                .queryParam("symbol", product)
+                .build()
+                .encode()
+                .toUri();
         try {
-            ResponseEntity<String> response = marketRestTemplate.getForEntity(uri.toUriString(), String.class);
+            ResponseEntity<String> response = marketRestTemplate.getForEntity(uri, String.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 log.warn("行情 depth 接口状态异常: {}", response.getStatusCode());
                 return Optional.empty();
@@ -379,7 +400,8 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
     @Setter
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class KlinePayload {
-        private Long start_time;
+        // Upstream may send number seconds/ms or a formatted string like "YYYY-MM-DD HH:MM:SS".
+        private Object start_time;
         private Double open_price;
         private Double high_price;
         private Double low_price;
@@ -391,7 +413,7 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
         }
 
         Long getStartTime() {
-            return start_time;
+            return toEpochMillis(start_time);
         }
 
         Double getOpenPrice() {
@@ -408,6 +430,35 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
 
         Double getVolume() {
             return volume;
+        }
+
+        private Long toEpochMillis(Object v) {
+            try {
+                if (v == null) return null;
+                if (v instanceof Number num) {
+                    long iv = num.longValue();
+                    // If looks like seconds, convert to ms
+                    return iv > 10_000_000_000L ? iv : iv * 1000L;
+                }
+                if (v instanceof String s) {
+                    String str = s.trim();
+                    // numeric string
+                    if (str.matches("^-?\\d+$")) {
+                        long iv = Long.parseLong(str);
+                        return iv > 10_000_000_000L ? iv : iv * 1000L;
+                    }
+                    // try parse common pattern: 2025-11-01 01:00:00 (assume UTC)
+                    try {
+                        java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(str, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                        return ldt.toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
+                    } catch (Exception ignore) {
+                        // fallthrough
+                    }
+                }
+                return null;
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 
