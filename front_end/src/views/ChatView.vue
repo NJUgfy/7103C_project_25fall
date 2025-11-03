@@ -60,6 +60,9 @@ const chatIds = ref([]);
 const currentChatId = ref('');
 const messages = ref([]);
 const streamingMessage = ref(null);
+const extractInfo = ref(null);
+const newsList = ref([]);
+const marketInfo = ref([]);
 const isStreaming = ref(false);
 const sidebarVisible = ref(true);
 const messageListRef = ref(null);
@@ -70,6 +73,8 @@ let currentSSEConnection = null;
 const hasMessages = computed(() => {
   return messages.value.length > 0 || streamingMessage.value;
 });
+
+ 
 
 // ========== 侧边栏操作 ==========
 function toggleSidebar() {
@@ -153,27 +158,59 @@ function handleSendMessage(content) {
     chatId: currentChatId.value,
     message: content,
     
-    onMessage: (data) => {
-      console.log('Received SSE data:', data);
-      
-      let contentChunk = '';
-      
-      // 解析不同格式的数据
-      if (data.content !== undefined) {
-        contentChunk = data.content;
-      } else if (data.delta && data.delta.content !== undefined) {
-        contentChunk = data.delta.content;
-      } else if (data.choices && data.choices[0]?.delta?.content !== undefined) {
-        contentChunk = data.choices[0].delta.content;
-      } else {
-        console.warn('Unrecognized data format:', data);
-        contentChunk = JSON.stringify(data);
+    onMessage: (payload) => {
+      console.log('Received SSE payload:', payload);
+
+      if (!payload || payload.type === undefined) {
+        const chunk = payload?.content ?? JSON.stringify(payload);
+        if (!streamingMessage.value) {
+          streamingMessage.value = { role: 'assistant', content: '' };
+        }
+        streamingMessage.value.content += chunk ?? '';
+        return;
       }
-      
-      // 追加内容到流式消息
-      if (streamingMessage.value) {
-        streamingMessage.value.content += contentChunk;
+
+      switch (payload.type) {
+        case 'extract':
+          extractInfo.value = payload.data || null;
+          return;
+        case 'news':
+          newsList.value = Array.isArray(payload.data) ? payload.data : [];
+          return;
+        case 'market':
+          marketInfo.value = Array.isArray(payload.data) ? payload.data : [];
+          return;
+        case 'final':
+          streamingMessage.value = {
+            role: 'assistant',
+            content: typeof payload.data === 'string'
+              ? payload.data
+              : JSON.stringify(payload.data, null, 2)
+          };
+          return;
+        case 'error':
+          ElMessage.error(payload.data?.message || 'Server error');
+          return;
+        case 'done':
+          return;
+        default:
+          console.warn('Unrecognized SSE type:', payload);
       }
+
+      // let contentChunk = '';
+      // if (payload.content !== undefined) {
+      //   contentChunk = payload.content;
+      // } else if (payload.delta && payload.delta.content !== undefined) {
+      //   contentChunk = payload.delta.content;
+      // } else if (payload.choices && payload.choices[0]?.delta?.content !== undefined) {
+      //   contentChunk = payload.choices[0].delta.content;
+      // } else {
+      //   console.warn('Unrecognized data format:', payload);
+      //   contentChunk = JSON.stringify(payload);
+      // }
+      // if (streamingMessage.value) {
+      //   streamingMessage.value.content += contentChunk;
+      // }
     },
     
     onError: (error) => {
