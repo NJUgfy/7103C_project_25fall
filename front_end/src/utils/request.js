@@ -2,8 +2,7 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 
 const request = axios.create({
-  // baseURL: 'http://127.0.0.1:4523/m1/7271114-6998760-default', // apifox测试uri，请根据实际情况修改
-  baseURL: 'http://127.0.0.1:8080',
+  baseURL: 'http://24.233.2.251:9104', // 'http://127.0.0.1:4523/m1/7271114-6998760-default', // apifox测试uri，请根据实际情况修改
   timeout: 10000
 });
 

@@ -44,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { getChatIds, getChatHistory, sendChatMessage } from '../api/chat';
 import { ElMessage } from 'element-plus';
 
@@ -60,21 +60,17 @@ const chatIds = ref([]);
 const currentChatId = ref('');
 const messages = ref([]);
 const streamingMessage = ref(null);
-const extractInfo = ref(null);
-const newsList = ref([]);
-const marketInfo = ref([]);
 const isStreaming = ref(false);
 const sidebarVisible = ref(true);
 const messageListRef = ref(null);
 
 let currentSSEConnection = null;
+let typewriterTimer = null; // 打字机定时器
 
 // ========== 计算属性 ==========
 const hasMessages = computed(() => {
   return messages.value.length > 0 || streamingMessage.value;
 });
-
- 
 
 // ========== 侧边栏操作 ==========
 function toggleSidebar() {
@@ -83,12 +79,13 @@ function toggleSidebar() {
 
 // ========== 聊天列表操作 ==========
 // 加载聊天列表
-async function loadChatIds() {
+async function loadChatIds(shouldReloadCurrent = true) {
   try {
     const res = await getChatIds();
-    chatIds.value = res.data.chatIds || [];
+    chatIds.value = (res.data.chatIds || []).reverse();
     
-    if (currentChatId.value && chatIds.value.includes(currentChatId.value)) {
+    // 只在需要时才重新加载当前聊天
+    if (shouldReloadCurrent && currentChatId.value && chatIds.value.includes(currentChatId.value)) {
       loadChat(currentChatId.value);
     }
   } catch (error) {
@@ -100,16 +97,13 @@ async function loadChatIds() {
 // 加载指定聊天记录
 async function loadChat(chatId) {
   try {
-    // 取消当前SSE连接
-    if (currentSSEConnection) {
-      currentSSEConnection.abort();
-      currentSSEConnection = null;
-      isStreaming.value = false;
-      streamingMessage.value = null;
-    }
+    // 取消当前SSE连接和打字机效果
+    cancelCurrentStreaming();
 
     currentChatId.value = chatId;
     const res = await getChatHistory(chatId);
+    console.log(`获取chatId为${res.data.chatId}的聊天记录:`);
+    console.log(res)
     messages.value = res.data.messages || [];
   } catch (error) {
     console.error('Failed to load chat history:', error);
@@ -119,16 +113,66 @@ async function loadChat(chatId) {
 
 // 创建新聊天
 function createNewChat() {
-  // 取消当前SSE连接
-  if (currentSSEConnection) {
-    currentSSEConnection.abort();
-    currentSSEConnection = null;
-    isStreaming.value = false;
-    streamingMessage.value = null;
-  }
+  // 取消当前SSE连接和打字机效果
+  cancelCurrentStreaming();
 
   currentChatId.value = `chat_${Date.now()}`;
   messages.value = [];
+}
+
+// 取消当前的流式传输
+function cancelCurrentStreaming() {
+  // 清除打字机定时器
+  if (typewriterTimer) {
+    clearInterval(typewriterTimer);
+    typewriterTimer = null;
+  }
+  
+  // 取消SSE连接
+  if (currentSSEConnection) {
+    currentSSEConnection.abort();
+    currentSSEConnection = null;
+  }
+  
+  isStreaming.value = false;
+  streamingMessage.value = null;
+}
+
+// ========== 打字机效果 ==========
+function typewriterEffect(fullText) {
+  // 清除之前的定时器
+  if (typewriterTimer) {
+    clearInterval(typewriterTimer);
+  }
+  
+  let index = 0;
+  const speed = 30; // 每个字符显示间隔（毫秒）
+  
+  typewriterTimer = setInterval(() => {
+    if (index < fullText.length) {
+      if (streamingMessage.value) {
+        streamingMessage.value.content += fullText[index];
+        index++;
+        
+        // 滚动到底部
+        nextTick(() => {
+          scrollToBottom();
+        });
+      }
+    } else {
+      // 打字完成
+      clearInterval(typewriterTimer);
+      typewriterTimer = null;
+    }
+  }, speed);
+}
+
+// 滚动到底部
+function scrollToBottom() {
+  if (messageListRef.value && messageListRef.value.$el) {
+    const container = messageListRef.value.$el;
+    container.scrollTop = container.scrollHeight;
+  }
 }
 
 // ========== 消息发送 ==========
@@ -145,7 +189,7 @@ function handleSendMessage(content) {
     content
   });
 
-  // 初始化流式消息
+  // 初始化流式消息（空内容）
   streamingMessage.value = {
     role: 'assistant',
     content: ''
@@ -158,88 +202,71 @@ function handleSendMessage(content) {
     chatId: currentChatId.value,
     message: content,
     
-    onMessage: (payload) => {
-      console.log('Received SSE payload:', payload);
-
-      if (!payload || payload.type === undefined) {
-        const chunk = payload?.content ?? JSON.stringify(payload);
-        if (!streamingMessage.value) {
-          streamingMessage.value = { role: 'assistant', content: '' };
+    onMessage: (data) => {
+      console.log('Received SSE data:', data);
+      
+      // 从后端返回的 final 类型中提取完整内容
+      if (data.content) {
+        // 清除之前的打字机定时器
+        if (typewriterTimer) {
+          clearInterval(typewriterTimer);
+          typewriterTimer = null;
         }
-        streamingMessage.value.content += chunk ?? '';
-        return;
+        
+        // 重置内容并开始打字机效果
+        if (streamingMessage.value) {
+          streamingMessage.value.content = '';
+          typewriterEffect(data.content);
+        }
+      } else {
+        console.warn('Unrecognized data format:', data);
       }
-
-      switch (payload.type) {
-        case 'extract':
-          extractInfo.value = payload.data || null;
-          return;
-        case 'news':
-          newsList.value = Array.isArray(payload.data) ? payload.data : [];
-          return;
-        case 'market':
-          marketInfo.value = Array.isArray(payload.data) ? payload.data : [];
-          return;
-        case 'final':
-          streamingMessage.value = {
-            role: 'assistant',
-            content: typeof payload.data === 'string'
-              ? payload.data
-              : JSON.stringify(payload.data, null, 2)
-          };
-          return;
-        case 'error':
-          ElMessage.error(payload.data?.message || 'Server error');
-          return;
-        case 'done':
-          return;
-        default:
-          console.warn('Unrecognized SSE type:', payload);
-      }
-
-      // let contentChunk = '';
-      // if (payload.content !== undefined) {
-      //   contentChunk = payload.content;
-      // } else if (payload.delta && payload.delta.content !== undefined) {
-      //   contentChunk = payload.delta.content;
-      // } else if (payload.choices && payload.choices[0]?.delta?.content !== undefined) {
-      //   contentChunk = payload.choices[0].delta.content;
-      // } else {
-      //   console.warn('Unrecognized data format:', payload);
-      //   contentChunk = JSON.stringify(payload);
-      // }
-      // if (streamingMessage.value) {
-      //   streamingMessage.value.content += contentChunk;
-      // }
     },
     
     onError: (error) => {
       console.error('SSE error:', error);
-      ElMessage.error('Failed to send message: ' + error.message);
+      ElMessage.error('发送消息失败: ' + error.message);
+      
+      // 清理状态
+      if (typewriterTimer) {
+        clearInterval(typewriterTimer);
+        typewriterTimer = null;
+      }
+      
       isStreaming.value = false;
       streamingMessage.value = null;
       currentSSEConnection = null;
     },
     
     onComplete: () => {
-      console.log('SSE completed');
+      // console.log('SSE completed');
       
-      // 将流式消息添加到消息列表
-      if (streamingMessage.value && streamingMessage.value.content) {
-        messages.value.push({
-          role: 'assistant',
-          content: streamingMessage.value.content
-        });
-      }
+      // 等待打字机效果完成
+      const checkCompletion = () => {
+        if (!typewriterTimer) {
+          // 打字机已完成，将流式消息添加到消息列表
+          if (streamingMessage.value && streamingMessage.value.content) {
+            messages.value.push({
+              role: 'assistant',
+              content: streamingMessage.value.content
+            });
+          }
+          
+          streamingMessage.value = null;
+          isStreaming.value = false;
+          currentSSEConnection = null;
+          
+          // 更新聊天列表
+          if (!chatIds.value.includes(currentChatId.value)) {
+            loadChatIds(false);
+          }
+        } else {
+          // 还在打字，继续等待
+          setTimeout(checkCompletion, 100);
+        }
+      };
       
-      streamingMessage.value = null;
-      isStreaming.value = false;
-      currentSSEConnection = null;
-      
-      // 更新聊天列表
-      if (!chatIds.value.includes(currentChatId.value)) {
-        loadChatIds();
-      }
+      checkCompletion();
     }
   });
 }
@@ -248,11 +275,9 @@ function handleSendMessage(content) {
 onMounted(() => {
   loadChatIds();
   
-  // 页面卸载时取消SSE连接
+  // 页面卸载时取消SSE连接和打字机
   window.addEventListener('beforeunload', () => {
-    if (currentSSEConnection) {
-      currentSSEConnection.abort();
-    }
+    cancelCurrentStreaming();
   });
 });
 </script>
