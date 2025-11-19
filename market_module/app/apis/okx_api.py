@@ -28,9 +28,55 @@ class OkxApi:
         )
         self.spot_market = okx_spot.market
     
-    def get_books(self, symbol):
+    def preset_symbol(self, symbol):
         if symbol == "BTC_USDT":
             symbol = "BTC-USDT"
+        if symbol == "BTC":
+            symbol = "BTC-USDT"
+        if symbol == "ETH_USDT":
+            symbol = "ETH-USDT"
+        if symbol == "ETH":
+            symbol = "ETH-USDT"
+        if symbol == "SOL_USDT":
+            symbol = "SOL-USDT"
+        if symbol == "SOL":
+            symbol = "SOL-USDT"
+        if symbol == "DOGE_USDT":
+            symbol = "DOGE-USDT"
+        if symbol == "DOGE":
+            symbol = "DOGE-USDT"
+        if symbol == "ADA_USDT":
+            symbol = "ADA-USDT"
+        if symbol == "ADA":
+            symbol = "ADA-USDT"
+        if symbol == "BNB_USDT":
+            symbol = "BNB-USDT"
+        if symbol == "BNB":
+            symbol = "BNB-USDT"
+        if symbol == "XRP_USDT":
+            symbol = "XRP-USDT"
+        if symbol == "XRP":
+            symbol = "XRP-USDT"
+        if symbol == "MATIC_USDT":
+            symbol = "MATIC-USDT"
+        if symbol == "MATIC":
+            symbol = "MATIC-USDT"
+        if symbol == "LINK_USDT":
+            symbol = "LINK-USDT"
+        if symbol == "LINK":
+            symbol = "LINK-USDT"
+        if symbol == "TRUMP_USDT":
+            symbol = "TRUMP-USDT"
+        if symbol == "TRUMP":
+            symbol = "TRUMP-USDT"
+        if symbol == "UNI_USDT":
+            symbol = "UNI-USDT"
+        if symbol == "UNI":
+            symbol = "UNI-USDT"
+        return symbol
+    
+    def get_books(self, symbol):
+        symbol = self.preset_symbol(symbol)
         
         market = self.spot_market
         
@@ -47,8 +93,7 @@ class OkxApi:
         return result
     
     def get_ticker(self, symbol):
-        if symbol == "BTC_USDT":
-            symbol = "BTC-USDT"
+        symbol = self.preset_symbol(symbol)
         
         market = self.spot_market
         
@@ -65,8 +110,7 @@ class OkxApi:
 
 
     def fetch_klines(self, symbol, market_type, interval, start_time, end_time, limit = 1000):
-        if symbol == "BTC_USDT":
-            symbol = "BTC-USDT"
+        symbol = self.preset_symbol(symbol)
 
         start_time_str = datetime.datetime.fromtimestamp(start_time).strftime("%Y-%m-%d %H:%M:%S")
         end_time_str = datetime.datetime.fromtimestamp(end_time).strftime("%Y-%m-%d %H:%M:%S")
