@@ -43,7 +43,7 @@ public class ChatWorkflowService {
             AtomicBoolean finished = new AtomicBoolean(false);
             try {
                 String userText = getUserText(req);
-                ExtractResult extract = llmService.extract(userText);
+                ExtractResult extract = llmService.extract(userText, req.getChatId());
                 sink.next(event("extract", extract));
 
                 Duration lookback = Duration.ofHours(lookbackHours);
@@ -54,7 +54,7 @@ public class ChatWorkflowService {
                 sink.next(event("market", markets));
 
                 CombinedContext ctx = buildContext(req, userText, extract, news, markets);
-                String finalAdvice = llmService.finalAdvice(ctx);
+                String finalAdvice = llmService.finalAdvice(ctx,req.getChatId());
                 sink.next(event("final", finalAdvice));
                 completeOnce(sink, finished);
             } catch (Exception ex) {

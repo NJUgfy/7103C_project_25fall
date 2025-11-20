@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
+
 /**
  * 使用 Spring AI OpenAI 客户端的真实 LLMService 实现。
  */
@@ -79,7 +81,7 @@ public class OpenAiLLMService implements LLMService {
     private final ObjectMapper objectMapper;
 
     @Override
-    public ExtractResult extract(String userText) {
+    public ExtractResult extract(String userText, String chatId) {
         try {
             String raw = chatClient.prompt()
                     .system(EXTRACT_SYSTEM_PROMPT)
@@ -103,11 +105,12 @@ public class OpenAiLLMService implements LLMService {
     }
 
     @Override
-    public void streamAdvice(CombinedContext ctx, Consumer<String> onChunk, Runnable onDone) {
+    public void streamAdvice(CombinedContext ctx, Consumer<String> onChunk, Runnable onDone, String chatId) {
         AtomicBoolean completed = new AtomicBoolean(false);
         chatClient.prompt()
                 .system(ADVICE_SYSTEM_PROMPT)
                 .user(buildAdvicePrompt(ctx))
+                .advisors(a -> a.param(CONVERSATION_ID, chatId))
                 .stream()
                 .content()
                 .subscribe(
@@ -121,11 +124,12 @@ public class OpenAiLLMService implements LLMService {
     }
 
     @Override
-    public String finalAdvice(CombinedContext ctx) {
+    public String finalAdvice(CombinedContext ctx, String chatId) {
         try {
             return chatClient.prompt()
-                    .system(ADVICE_SYSTEM_PROMPT)
-                    .user(buildAdvicePrompt(ctx))
+                    .system(ADVICE_SYSTEM_PROMPT+ "\n\n" + buildAdvicePrompt(ctx))
+                    .user(ctx.getUserText())
+                    .advisors(a -> a.param(CONVERSATION_ID, chatId))
                     .call()
                     .content();
         } catch (Exception ex) {
