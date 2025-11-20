@@ -1,0 +1,87 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 金色渐变 -->
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="darkGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DAA520;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 白色背景 -->
+  <rect width="400" height="400" fill="#FFFFFF"/>
+  
+  <!-- 中心位置 -->
+  <g transform="translate(200, 200)">
+    
+    <!-- 外圈虚线圆环 - 带旋转动画 -->
+    <g>
+      <animateTransform 
+        attributeName="transform"
+        attributeType="XML"
+        type="rotate"
+        from="0 0 0"
+        to="360 0 0"
+        dur="8s"
+        repeatCount="indefinite"/>
+      
+      <!-- 第一层外圈虚线段 -->
+      <circle cx="0" cy="0" r="100" fill="none" 
+              stroke="url(#darkGold)" 
+              stroke-width="22" 
+              stroke-dasharray="70 10"
+              opacity="0.95"/>
+    </g>
+    
+    <!-- 第二层外圈虚线 - 反向旋转 -->
+    <g>
+      <animateTransform 
+        attributeName="transform"
+        attributeType="XML"
+        type="rotate"
+        from="0 0 0"
+        to="-360 0 0"
+        dur="6s"
+        repeatCount="indefinite"/>
+      
+      <!-- 第二层外圈虚线段 (稍小一点) -->
+      <circle cx="0" cy="0" r="85" fill="none" 
+              stroke="url(#goldGradient)" 
+              stroke-width="18" 
+              stroke-dasharray="60 10"
+              opacity="0.9"/>
+    </g>
+    
+    <!-- 内圈实心圆 (缩小) -->
+    <circle cx="0" cy="0" r="58" fill="url(#goldGradient)"/>
+    
+    <!-- 棱角分明的字母 C -->
+    <path d="M 15 -25 
+             C 15 -30, 12 -35, 5 -35
+             L -10 -35
+             C -20 -35, -25 -30, -25 -20
+             L -25 20
+             C -25 30, -20 35, -10 35
+             L 5 35
+             C 12 35, 15 30, 15 25
+             L 15 18
+             L 5 18
+             L 5 25
+             C 5 27, 3 28, 0 28
+             L -10 28
+             C -13 28, -15 26, -15 23
+             L -15 -23
+             C -15 -26, -13 -28, -10 -28
+             L 0 -28
+             C 3 -28, 5 -27, 5 -25
+             L 5 -18
+             L 15 -18
+             Z" 
+          fill="#FFFFFF"/>
+    
+  </g>
+</svg>

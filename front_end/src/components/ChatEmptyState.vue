@@ -1,9 +1,12 @@
 <template>
   <div class="empty-container">
     <div class="empty-state">
-      <div class="empty-icon">💬</div>
-      <h3 class="empty-title">Start New Conversation</h3>
-      <p class="empty-desc">Ask anything to get intelligent responses</p>
+      <!-- Logo图标 -->
+      <div class="empty-icon">
+        <img src="@/assets/crypto-investment-logo.svg" alt="Crypto Investment Assistant" class="logo-image" />
+      </div>
+      <h3 class="empty-title">Cryptocurrency Investment Assistant</h3>
+      <p class="empty-desc">Intelligent analysis, Smarter investments</p>
     </div>
   </div>
 </template>
@@ -18,16 +21,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  background: #FFFFFF;
   padding: 40px 20px;
   position: relative;
 }
 
 .empty-state {
   text-align: center;
-  max-width: 600px;
+  max-width: 700px;
   animation: fadeIn 0.6s ease-out;
-  transform: translateY(-60px);
+  transform: translateY(-80px);
 }
 
 @keyframes fadeIn {
@@ -42,11 +45,18 @@
 }
 
 .empty-icon {
-  font-size: 80px;
   margin-bottom: 28px;
-  opacity: 0.8;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+  opacity: 0.95;
+  /* filter: drop-shadow(0 4px 16px rgba(218, 165, 32, 0.2)); */
   animation: float 3s ease-in-out infinite;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-image {
+  width: 180px;
+  height: 180px;
 }
 
 @keyframes float {
@@ -61,24 +71,35 @@
 .empty-title {
   font-size: 36px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #DAA520;
   margin: 0 0 16px 0;
   letter-spacing: -0.5px;
 }
 
 .empty-desc {
   font-size: 18px;
-  color: #7f8c8d;
+  color: #8B7355;
   margin: 0;
   font-weight: 400;
+  line-height: 1.6;
 }
 
 @media (max-width: 768px) {
   .empty-state {
     transform: translateY(-40px);
+  }
+
+  .logo-image {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .empty-title {
+    font-size: 28px;
+  }
+  
+  .empty-desc {
+    font-size: 16px;
   }
   
   @keyframes fadeIn {

@@ -61,30 +61,31 @@ function getChatTitle(chatId) {
   // 查找当前chatId在列表中的索引
   const index = props.chatIds.indexOf(chatId);
   
-  // 如果找到，返回Conversation N（从1开始计数）
   if (index !== -1) {
     return `Conversation ${props.chatIds.length - index}`;
   }
   
-  // 兜底
   return 'New Chat';
 }
 </script>
 
 <style scoped>
+/* === Sidebar 主体 === */
 .sidebar {
   width: 280px;
-  background: white;
-  border-right: 1px solid #e8e8e8;
+  background: #ffffff;
+  border-right: 1px solid #e5e2dc;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.03);
   transition: transform 0.3s ease;
 }
 
+
+/* === Header === */
 .sidebar-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid #e5e2dc;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -94,11 +95,13 @@ function getChatTitle(chatId) {
 .sidebar-title {
   font-size: 18px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #2f2f2f;
   margin: 0;
   flex: 1;
 }
 
+
+/* === Toggle Button === */
 .sidebar-toggle {
   width: 40px;
   height: 40px;
@@ -109,98 +112,106 @@ function getChatTitle(chatId) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   padding: 0;
   flex-shrink: 0;
 }
 
 .sidebar-toggle:hover {
-  background: #f0f2f5;
+  background: #f4f2ee;
 }
 
 .toggle-icon {
   width: 20px;
   height: 20px;
-  stroke: #2c3e50;
+  stroke: #3c3c3c;
 }
 
+
+/* === New Chat 按钮 === */
 .new-chat-btn {
   margin: 16px;
   width: calc(100% - 32px);
   height: 44px;
   border-radius: 10px;
   font-weight: 500;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
+  background: #d4a017; /* 更沉稳的金色 */
+  border: 1px solid #c39b54;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .new-chat-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+  background: #c79615;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
-.icon-plus {
-  width: 18px;
-  height: 18px;
-}
 
+/* === Chat List === */
 .chat-list {
   flex: 1;
   overflow-y: auto;
   padding: 8px 16px;
 }
 
+
+/* === Chat Item === */
 .chat-item {
   padding: 12px 14px;
   margin-bottom: 6px;
-  background: #f8f9fa;
+  background: #faf9f7; 
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid transparent;
+  border: 1px solid #f0ede8;
 }
 
 .chat-item:hover {
-  background: #f0f2f5;
-  border-color: #e0e0e0;
+  background: #f4f2ee;
+  border-color: #e3dfd7;
 }
 
 .chat-item.active {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  border-color: #667eea;
+  background: #fffdf8;
+  border-color: #d4a017; 
+  box-shadow: 0 0 0 1px #d4a017 inset;
 }
 
+
+/* === Icons === */
 .chat-icon {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  stroke: #666;
+  stroke: #6c6c6c;
 }
 
 .chat-item.active .chat-icon {
-  stroke: #667eea;
+  stroke: #b58b40; 
 }
+
 
 .chat-item-text {
   font-size: 14px;
-  color: #2c3e50;
+  color: #2f2f2f;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .chat-item.active .chat-item-text {
-  color: #667eea;
+  color: #b58b40;
   font-weight: 500;
 }
+
 
 @media (max-width: 768px) {
   .sidebar {

@@ -7,7 +7,10 @@
       </svg>
     </button>
     
-    <h1 class="chat-title">AI Assistant</h1>
+    <!-- 标题：侧边栏隐藏时显示，或者有消息时也显示 -->
+    <h1 class="chat-title" :class="{ 'title-visible': !sidebarVisible || hasMessages }">
+      CryptoAI
+    </h1>
     
     <div class="chat-status">
       <span class="status-dot"></span>
@@ -21,6 +24,10 @@ defineProps({
   sidebarVisible: {
     type: Boolean,
     default: true
+  },
+  hasMessages: {
+    type: Boolean,
+    default: false
   },
   isStreaming: {
     type: Boolean,
@@ -74,6 +81,14 @@ defineEmits(['toggle-sidebar']);
   color: #2c3e50;
   margin: 0;
   flex: 1;
+  /* 默认透明 */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* 当侧边栏隐藏时显示 */
+.chat-title.title-visible {
+  opacity: 1;
 }
 
 .chat-status {
@@ -81,13 +96,14 @@ defineEmits(['toggle-sidebar']);
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #52c41a;
+  color: #63AD96;
+  flex-shrink: 0;
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
-  background: #52c41a;
+  background: #63AD96;
   border-radius: 50%;
   animation: pulse 2s ease-in-out infinite;
 }

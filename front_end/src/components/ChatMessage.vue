@@ -1,7 +1,13 @@
 <template>
   <div :class="['message', message.role]">
     <div class="message-avatar">
-      <span class="avatar-content">{{ message.role === 'user' ? 'Me' : 'AI' }}</span>
+      <!-- AI头像 -->
+      <img v-if="message.role === 'assistant'" 
+           src="@/assets/crypto-investment-logo.svg" 
+           alt="AI" 
+           class="avatar-logo" />
+      <!-- 用户头像 -->
+      <span v-else class="avatar-content">Me</span>
     </div>
     <div class="message-content">
       <div 
@@ -16,7 +22,7 @@
 import { computed } from 'vue';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/github-dark.css'; // 代码高亮主题
+import 'highlight.js/styles/github-dark.css'; 
 
 
 marked.setOptions({
@@ -30,7 +36,7 @@ marked.setOptions({
     }
     return hljs.highlightAuto(code).value;
   },
-  breaks: true, // 支持换行
+  breaks: true, 
   gfm: true, // 启用 GitHub Flavored Markdown
 });
 
@@ -99,22 +105,30 @@ function getCurrentTime() {
   font-weight: 500;
   font-size: 14px;
   margin: 0 12px;
+  overflow: hidden;
 }
 
 .message.user .message-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #EBC97F;
   color: white;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 8px rgba(235, 201, 127, 0.3);
 }
 
 .message.assistant .message-avatar {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(240, 147, 251, 0.3);
+  background: white;
+  box-shadow: 0 2px 8px rgba(218, 165, 32, 0.2);
+  padding: 2px;
 }
 
 .avatar-content {
   font-size: 13px;
+}
+
+.avatar-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(2);
 }
 
 .message-content {
@@ -130,6 +144,7 @@ function getCurrentTime() {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+/* AI助手消息气泡 */
 .message.assistant .message-content {
   background: white;
   color: #2c3e50;
@@ -137,10 +152,12 @@ function getCurrentTime() {
   border: 1px solid #e8e8e8;
 }
 
+/* 用户消息气泡 */
 .message.user .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #EBC97F;
+  color: #2c3e50;
   border-top-right-radius: 4px;
+  border: 1px solid rgba(235, 201, 127, 0.3);
 }
 
 .message-text {
@@ -158,7 +175,7 @@ function getCurrentTime() {
 
 .message.user .message-time {
   text-align: right;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(44, 62, 80, 0.7);
 }
 
 .message.assistant .message-time {
@@ -222,8 +239,8 @@ function getCurrentTime() {
 
 /* 用户消息中的行内代码 */
 .message.user .markdown-body :deep(code) {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
+  background-color: rgba(255, 255, 255, 0.3);
+  color: #2c3e50;
 }
 
 /* 代码块 */
@@ -274,34 +291,35 @@ function getCurrentTime() {
 
 /* 用户消息中的引用 */
 .message.user .markdown-body :deep(blockquote) {
-  border-left-color: rgba(255, 255, 255, 0.5);
-  background-color: rgba(255, 255, 255, 0.1);
+  border-left-color: #DAA520;
+  background-color: rgba(218, 165, 32, 0.1);
 }
 
 .markdown-body :deep(blockquote p) {
   margin: 0;
 }
 
-/* 链接样式 */
+/* 链接样式 - 金色 */
 .markdown-body :deep(a) {
-  color: #667eea;
+  color: #DAA520;
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s;
 }
 
 .markdown-body :deep(a:hover) {
-  border-bottom-color: #667eea;
+  border-bottom-color: #DAA520;
 }
 
 /* 用户消息中的链接 */
 .message.user .markdown-body :deep(a) {
-  color: white;
-  border-bottom-color: rgba(255, 255, 255, 0.5);
+  color: #2c3e50;
+  font-weight: 500;
+  border-bottom-color: rgba(44, 62, 80, 0.3);
 }
 
 .message.user .markdown-body :deep(a:hover) {
-  border-bottom-color: white;
+  border-bottom-color: #2c3e50;
 }
 
 /* 分隔线 */
@@ -355,7 +373,7 @@ function getCurrentTime() {
   margin: 0 0 4px 0;
 }
 
-/* 如果段落后面紧跟列表，段落不要下边距 */
+/* 如果段落后面紧跟列表,段落不要下边距 */
 .markdown-body :deep(p:has(+ ul)),
 .markdown-body :deep(p:has(+ ol)) {
   margin-bottom: 0;

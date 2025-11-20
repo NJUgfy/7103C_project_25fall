@@ -16,6 +16,7 @@
       <ChatHeader 
         :sidebar-visible="sidebarVisible"
         :is-streaming="isStreaming"
+        :has-messages="hasMessages"
         @toggle-sidebar="toggleSidebar"
       />
 
@@ -286,7 +287,7 @@ onMounted(() => {
 .chat-container {
   display: flex;
   height: 100vh;
-  background: #f8f9fa;
+  background: #F8E9BB;
 }
 
 .main-chat {
@@ -327,24 +328,18 @@ onMounted(() => {
 }
 
 .input-centered :deep(.chat-input-container) {
-  background: white;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.12),
     0 2px 8px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(102, 126, 234, 0.1);
-  border-radius: 24px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    0 0 0 1px rgba(218, 165, 32, 0.1); 
 }
 
 .input-centered :deep(.chat-input-container:hover) {
   box-shadow: 
-    0 12px 48px rgba(102, 126, 234, 0.2),
+    0 12px 48px rgba(218, 165, 32, 0.2),  
     0 4px 16px rgba(0, 0, 0, 0.1),
-    0 0 0 2px rgba(102, 126, 234, 0.2);
-  transform: translateY(-2px);
+    0 0 0 2px rgba(218, 165, 32, 0.25);  
 }
-
 /* 响应式 */
 @media (max-width: 768px) {
   .input-centered {

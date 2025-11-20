@@ -7,7 +7,7 @@
           type="textarea"
           :rows="1"
           :autosize="{ minRows: 1, maxRows: 4 }"
-          placeholder="Type a message... "
+          placeholder="Ask me anything "
           @keydown.enter="handleKeyDown"
           class="custom-textarea"
         />
@@ -74,12 +74,12 @@ function handleSend() {
   background: white;
   border-radius: 24px;
   padding: 6px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(218, 165, 32, 0.1);
   transition: all 0.2s ease;
 }
 
 .chat-input-container:focus-within {
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15), 0 0 0 2px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 4px 20px rgba(218, 165, 32, 0.2), 0 0 0 2px rgba(218, 165, 32, 0.25);
 }
 
 .input-box {
@@ -129,7 +129,7 @@ function handleSend() {
   width: 40px;
   height: 40px;
   min-width: 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #DAA520;
   border: none;
   transition: all 0.2s ease;
   box-shadow: none;
@@ -139,7 +139,8 @@ function handleSend() {
 
 .send-button:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(218, 165, 32, 0.4);
+  background: #EBC97F;
 }
 
 .send-button:active:not(:disabled) {
@@ -155,7 +156,7 @@ function handleSend() {
 
 /* 加载中的按钮样式 */
 .send-button.is-loading {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #DAA520;
   opacity: 0.8;
   cursor: wait;
 }
