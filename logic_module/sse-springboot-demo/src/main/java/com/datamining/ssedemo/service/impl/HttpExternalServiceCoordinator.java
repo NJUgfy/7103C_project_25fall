@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -88,6 +89,10 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
         Instant now = Instant.now();
         Instant from = now.minus(window);
         String keyword = buildKeyword(extract);
+        String region = "en";
+        if (extract != null && "zh".equalsIgnoreCase(extract.getLanguage())) {
+            region = "zh";
+        }
 
         URI uri = UriComponentsBuilder.fromHttpUrl(newsBaseUrl)
                 .path("/search")
@@ -96,7 +101,7 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
                 .queryParam("to", DATE_FORMATTER.format(now.atZone(ZoneOffset.UTC)))
                 .queryParam("limit", 5)
                 .queryParam("sources", "")
-                .queryParam("region", "en")
+                .queryParam("region", region)
                 .build()
                 .encode()
                 .toUri();
@@ -129,7 +134,14 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
 
     @Override
     public List<MarketSnapshot> fetchMarket(ExtractResult extract, Duration lookback) {
-        if (extract == null || CollectionUtils.isEmpty(extract.getProducts())) {
+        List<String> targets = Collections.emptyList();
+        if (extract != null && !CollectionUtils.isEmpty(extract.getProducts())) {
+            targets = extract.getProducts();
+        } else if (extract != null && !CollectionUtils.isEmpty(extract.getMarketKeywords())) {
+            targets = extract.getMarketKeywords();
+        }
+        targets = filterTargets(targets);
+        if (CollectionUtils.isEmpty(targets)) {
             return Collections.emptyList();
         }
         if (!marketServiceEnabled) {
@@ -139,7 +151,7 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
         Instant now = Instant.now();
         Instant from = now.minus(window);
         List<MarketSnapshot> snapshots = new ArrayList<>();
-        for (String product : extract.getProducts()) {
+        for (String product : targets) {
             if (!marketServiceEnabled) {
                 break;
             }
@@ -181,14 +193,12 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
         try {
             ResponseEntity<String> response = marketRestTemplate.getForEntity(uri, String.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-                log.warn("行情 ticker 接口状态异常: {}", response.getStatusCode());
-                marketServiceEnabled = false;
+                log.warn("行情 ticker 接口状态异常: {} for {}", response.getStatusCode(), product);
                 return Optional.empty();
             }
             ApiResponse<TickerPayload> body = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
             if (body.getCode() != 200 || body.getData() == null) {
-                log.warn("行情 ticker 接口返回失败: {} - {}", body.getCode(), body.getMessage());
-                marketServiceEnabled = false;
+                log.warn("行情 ticker 接口返回失败: {} - {} for {}", body.getCode(), body.getMessage(), product);
                 return Optional.empty();
             }
             return Optional.of(body.getData());
@@ -216,7 +226,6 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
             ResponseEntity<String> response = marketRestTemplate.getForEntity(uri, String.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 log.warn("行情 kline 接口状态异常: {}", response.getStatusCode());
-                marketServiceEnabled = false;
                 return new KlineResult(50.0, Collections.emptyList());
             }
             ApiResponse<List<KlinePayload>> body = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
@@ -240,7 +249,6 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
             return new KlineResult(rsi, klines);
         } catch (Exception ex) {
             log.error("获取 {} kline 失败", product, ex);
-            marketServiceEnabled = false;
             return new KlineResult(50.0, Collections.emptyList());
         }
     }
@@ -283,16 +291,62 @@ public class HttpExternalServiceCoordinator implements ExternalServiceCoordinato
             return "";
         }
         List<String> parts = new ArrayList<>();
-        if (!CollectionUtils.isEmpty(extract.getNewsCategories())) {
-            parts.addAll(extract.getNewsCategories());
+        if (!CollectionUtils.isEmpty(extract.getNewsKeywords())) {
+            parts.addAll(extract.getNewsKeywords());
+        } else {
+            if (!CollectionUtils.isEmpty(extract.getNewsCategories())) {
+                parts.addAll(extract.getNewsCategories());
+            }
+            if (!CollectionUtils.isEmpty(extract.getProducts())) {
+                parts.addAll(extract.getProducts());
+            }
         }
-        if (!CollectionUtils.isEmpty(extract.getProducts())) {
-            parts.addAll(extract.getProducts());
-        }
+        parts = cleanKeywords(parts);
         if (parts.isEmpty()) {
             return "";
         }
         return String.join(" OR ", parts);
+    }
+
+    /**
+     * 过滤掉无效或过于泛化的关键词，避免出现“recent news”“past day”等无意义的查询词。
+     */
+    private List<String> cleanKeywords(List<String> parts) {
+        if (CollectionUtils.isEmpty(parts)) {
+            return Collections.emptyList();
+        }
+        Set<String> ban = Set.of(
+                "recent news", "past day", "past month", "recent",
+                "最近新闻", "过去一天", "过去一个月", "新闻", "最近"
+        );
+        return parts.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .filter(s -> !ban.contains(s.toLowerCase()))
+                .distinct()
+                .toList();
+    }
+
+    /**
+     * 过滤掉明显无效的交易对，避免用“tickers”等泛词调用行情接口。
+     */
+    private List<String> filterTargets(List<String> raw) {
+        if (CollectionUtils.isEmpty(raw)) {
+            return Collections.emptyList();
+        }
+        return raw.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .filter(this::isSymbolLike)
+                .distinct()
+                .toList();
+    }
+
+    private boolean isSymbolLike(String s) {
+        String v = s.trim();
+        return v.matches("(?i)^[A-Z0-9]{2,10}[-_][A-Z0-9]{2,10}$");
     }
 
     private double calcRsi(List<Double> closes, int period) {
